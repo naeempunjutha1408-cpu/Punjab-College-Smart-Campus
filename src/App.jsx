@@ -41,7 +41,6 @@ function App() {
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
 
-  // Password Recovery
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   const [profile, setProfile] = useState(null)
@@ -49,6 +48,9 @@ function App() {
   const [profileError, setProfileError] = useState('')
 
   const [activePage, setActivePage] = useState('Dashboard')
+
+  // Mobile Navigation
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const [dashboardData, setDashboardData] = useState(null)
   const [dashboardLoading, setDashboardLoading] = useState(false)
@@ -88,6 +90,7 @@ function App() {
 
       if (event === 'SIGNED_OUT') {
         setIsPasswordRecovery(false)
+        setMobileMenuOpen(false)
       }
 
       setSession(newSession)
@@ -255,12 +258,20 @@ function App() {
 
   // Logout
   const handleLogout = async () => {
+    setMobileMenuOpen(false)
+
     const { error } = await supabase.auth.signOut()
 
     if (error) {
       console.error('Logout error:', error.message)
       setProfileError('Logout failed. Please try again.')
     }
+  }
+
+  // Open selected page and close mobile menu
+  const handlePageChange = (page) => {
+    setActivePage(page)
+    setMobileMenuOpen(false)
   }
 
   // Initial Authentication Loading
@@ -381,7 +392,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
 
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 flex-col overflow-hidden bg-slate-950 text-white lg:flex">
 
         {/* College Logo */}
@@ -411,7 +422,7 @@ function App() {
             {allowedMenuItems.map((item) => (
               <button
                 key={item.name}
-                onClick={() => setActivePage(item.name)}
+                onClick={() => handlePageChange(item.name)}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${
                   activePage === item.name
                     ? 'bg-blue-600 font-semibold text-white shadow-lg shadow-blue-900/30'
@@ -427,6 +438,7 @@ function App() {
           </nav>
         </div>
 
+        {/* Desktop User Profile */}
         <div className="mt-auto shrink-0 border-t border-white/10 p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-bold">
@@ -458,7 +470,113 @@ function App() {
         </div>
       </aside>
 
-      {/* Main Content with Campus Background */}
+      {/* Mobile Sidebar Overlay and Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+
+          {/* Background Overlay */}
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="absolute inset-0 h-full w-full bg-black/60"
+            aria-label="Close navigation menu"
+          />
+
+          {/* Mobile Sidebar */}
+          <aside className="absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col bg-slate-950 text-white shadow-2xl">
+
+            {/* Mobile Logo */}
+            <div className="flex h-24 items-center justify-between gap-3 border-b border-white/10 px-5">
+
+              <div className="flex items-center gap-3">
+                <img
+                  src="/college-logo.png"
+                  alt="Punjab College Logo"
+                  className="h-12 w-12 rounded-xl bg-white object-contain p-1"
+                />
+
+                <div>
+                  <h1 className="text-sm font-bold tracking-wide">
+                    PUNJAB COLLEGE
+                  </h1>
+                  <p className="text-xs text-slate-400">
+                    Smart Campus System
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg px-3 py-2 text-2xl text-slate-300 hover:bg-white/10"
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Mobile Menu Items */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
+
+              <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Main Menu
+              </p>
+
+              <nav className="space-y-1">
+                {allowedMenuItems.map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => handlePageChange(item.name)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${
+                      activePage === item.name
+                        ? 'bg-blue-600 font-semibold text-white'
+                        : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <span className="w-6 text-center text-lg">
+                      {item.icon}
+                    </span>
+
+                    {item.name}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Mobile User Profile and Logout */}
+            <div className="border-t border-white/10 p-5">
+
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-bold">
+                  {(profile.full_name || session.user.email || 'U')
+                    .trim()
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((part) => part[0]?.toUpperCase())
+                    .join('')}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {profile.full_name || session.user.email || 'User'}
+                  </p>
+
+                  <p className="text-xs capitalize text-slate-400">
+                    {profile.role}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="mt-5 w-full rounded-lg border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/10"
+              >
+                Logout
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
       <main
         className="min-h-screen bg-cover bg-center bg-fixed bg-no-repeat lg:ml-64"
         style={{
@@ -468,21 +586,35 @@ function App() {
       >
 
         {/* Topbar */}
-        <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-slate-200 bg-white/95 px-5 backdrop-blur-md sm:px-8">
+        <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md sm:px-8">
 
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">
-              {activePage}
-            </h2>
+          <div className="flex min-w-0 items-center gap-3">
 
-            <p className="hidden text-xs text-slate-500 sm:block">
-              Punjab College / {activePage}
-            </p>
+            {/* Mobile Hamburger Button */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="shrink-0 rounded-lg bg-slate-100 p-2.5 text-xl text-slate-700 transition hover:bg-slate-200 lg:hidden"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              ☰
+            </button>
+
+            <div className="min-w-0">
+              <h2 className="truncate text-xl font-bold text-slate-900">
+                {activePage}
+              </h2>
+
+              <p className="hidden text-xs text-slate-500 sm:block">
+                Punjab College / {activePage}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+
             <button
-              onClick={() => setActivePage('Notices')}
+              onClick={() => handlePageChange('Notices')}
               className="relative rounded-full bg-slate-100 p-3 text-slate-600 hover:bg-slate-200"
               title="View Notices"
             >
@@ -561,7 +693,7 @@ function App() {
                   .map((item) => (
                     <button
                       key={item.name}
-                      onClick={() => setActivePage(item.name)}
+                      onClick={() => handlePageChange(item.name)}
                       className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white/95 p-5 text-left shadow-sm backdrop-blur-sm transition hover:-translate-y-1 hover:shadow-md"
                     >
                       <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-2xl text-blue-700">
@@ -600,7 +732,7 @@ function App() {
               </div>
 
               <button
-                onClick={() => setActivePage('Classes')}
+                onClick={() => handlePageChange('Classes')}
                 className="w-fit rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-200 transition hover:bg-blue-700"
               >
                 View Classes
@@ -613,7 +745,7 @@ function App() {
                 Dashboard data could not be loaded: {dashboardError}
 
                 <button
-                  onClick={() => setActivePage('Classes')}
+                  onClick={() => handlePageChange('Classes')}
                   className="ml-2 font-semibold underline"
                 >
                   Open Classes
@@ -793,7 +925,7 @@ function App() {
             </section>
 
             {/* Recent Students */}
-            <section className="overflow-hidden rounded-xl border border-slate-100 bg-white/95 shadow-sm backdrop-blur-sm">
+            <section className="overflow-hidden rounded-xl border border-slate-100 bg-white/95 shadow-sm">
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-6">
                 <div>
@@ -807,7 +939,7 @@ function App() {
                 </div>
 
                 <button
-                  onClick={() => setActivePage('Classes')}
+                  onClick={() => handlePageChange('Classes')}
                   className="text-sm font-semibold text-blue-600 hover:text-blue-800"
                 >
                   View Classes
